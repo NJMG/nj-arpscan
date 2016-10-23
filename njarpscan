@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# source name of script: $0.sh
+[[ -f "$0.sh" ]] && . $0.sh

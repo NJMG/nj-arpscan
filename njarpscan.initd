@@ -1,0 +1,131 @@
+#!/bin/sh
+#
+### BEGIN INIT INFO
+# Provides:			 njarpscan
+# Required-Start:	 $local_fs $remote_fs $network $syslog $named
+# Required-Stop:  	 $local_fs $remote_fs $network $syslog $named
+# Should-Start:	     
+# Should-Stop:       
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Script arp-scan tasks
+# Description:       Daemon to Start or Stop njarp-scan bash script
+### END INIT INFO
+
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+
+
+DESC="NjArpScan Script"
+# INIT script basename:
+INIT_NAME="njarpscan.initd"
+# DAEMON full path :
+DAEMON="/usr/bin/njarpscan"
+DAEMON_NAME=njarpscan
+SCRIPTNAME="/etc/init.d/${INIT_NAME}"
+
+# For a (bash)script daemon : DAEMON_BACKGROUND must be TRUE
+DAEMON_BACKGROUND=true
+DAEMON_MAKE_PIDFILE=true
+
+# nicelevel [-20..0..20 ]: -20 highest prioriy ; 20 slowest prioriy
+DAEMON_NICE_LEVEL=0
+# Options ( else left blank )
+DAEMON_ARGS=
+
+PIDFILE="/var/run/${INIT_NAME}.pid"
+
+
+# Exit if the Deamon package is falset installed
+[ -x "${DAEMON}" ] || exit 0
+
+# Define LSB log_* functions.
+. /lib/lsb/init-functions
+
+# DAEMON_BACKGROUND:
+if [ "${DAEMON_BACKGROUND}" = "true" ] ; then
+	DAEMON_BG="--background"
+else
+	unset -v DAEMON_BG 
+fi
+# DAEMON_MAKE_PIDFILE:
+if [ "${DAEMON_MAKE_PIDFILE}" = "true" ] ; then
+	DAEMON_MP="--make-pidfile"
+else
+	unset -v DAEMON_MP 
+fi
+# PID file:
+if [ -n "${PIDFILE}" ] ; then
+	DAEMON_PF="--pidfile"
+else
+	unset -v DAEMON_MP DAEMON_PF
+fi
+# DAEMON_NICE_LEVEL:
+if [ -n "${DAEMON_NICE_LEVEL}" ] ; then
+	DAEMON_NICE="--nicelevel"
+	DNICE=${DAEMON_NICE_LEVEL}
+else
+	unset -v DAEMON_NICE DNICE
+fi
+
+do_start()
+{
+	# Return
+	#   0 if daemon has been started
+	#   1 if daemon was already running
+	#   other if daemon could not be started or a failure occured
+	start-stop-daemon --name ${DAEMON_NAME} --start --quiet ${DAEMON_BG} ${DAEMON_MP} ${DAEMON_PF} ${PIDFILE} ${DAEMON_NICE} ${DNICE} --exec ${DAEMON} -- ${DAEMON_ARGS}
+}
+
+do_stop()
+{
+	# Return
+	#   0 if daemon has been stopped
+	#   1 if daemon was already stopped
+	#   other if daemon could not be stopped or a failure occurred
+	start-stop-daemon --name ${DAEMON_NAME} --stop --quiet --retry=TERM/30/KILL/5 --pidfile ${PIDFILE} --name ${DAEMON_NAME}
+}
+
+
+case "$1" in
+	start)
+		log_daemon_msg "Starting ${DESC}" "${DAEMON_NAME}"
+		do_start
+		log_end_msg $?
+		#case "$?" in
+		#	0) sendsigs_omit
+		#	   log_end_msg 0 ;;
+		#	1) log_progress_msg "already started"
+		#	   log_end_msg 0 ;;
+		#	*) log_end_msg 1 ;;
+		#esac
+
+	;;	
+	stop)
+		log_daemon_msg "Stopping ${DESC}" "${DAEMON_NAME}"
+		do_stop
+		log_end_msg $?
+		#case "$?" in
+		#	0) log_end_msg 0 ;;
+		#	1) log_progress_msg "already stopped"
+		#	   log_end_msg 0 ;;
+		#	*) log_end_msg 1 ;;
+		#esac
+
+	;;	
+	restart|force-reload)
+		$0 stop
+		sleep 1
+		$0 start
+	;;
+	status)
+		status_of_proc -p ${PIDFILE} ${DAEMON} ${DAEMON_NAME} && exit 0 || exit $?
+	;;
+	*)
+		echo "Usage: ${SCRIPTNAME} {start|stop|restart|force-reload|status}" >&2
+		exit 3
+	;;
+esac
+
+:
